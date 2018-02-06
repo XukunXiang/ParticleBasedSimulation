@@ -1,0 +1,14 @@
+# compiled files:
+*.o
+
+# executables:
+md
+
+# directories to ignore:
+bettercode/
+cutoff/
+LinkedCellList/
+timing/
+
+# other files
+*.f90
