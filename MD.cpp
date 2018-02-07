@@ -29,10 +29,11 @@ int main() {
 	srand(time(NULL));
 	
 	//Initialization
-	Init_R(R);
+//	Init_R(R);
+	Init_R_FCC(R);
 //	Init_P(P);
 	Init_P_random(P);
-	output(R,P,realt,RPo,Energyo);
+///	output(R,P,realt,RPo,Energyo);
 
 	//Warmup Run
 	for (iter = 1; iter<=(Itime+1); iter++) {
