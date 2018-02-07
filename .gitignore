@@ -1,6 +1,10 @@
 # compiled files:
 *.o
 
+# output files:
+*.xyz
+*.dat
+
 # executables:
 md
 
