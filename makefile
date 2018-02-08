@@ -8,12 +8,12 @@ OBJS = $(subst .cpp,.o,$(SRCS))
 all: md
 
 # Whereas here we create the object file
-md: $(OBJS)
+md: $(OBJS) constants.h
 	g++ ${FLAGS} -o md $(OBJS)
 #	export OMP_NUM_THREADS=20
-#	./md
+	./md
 
-%.o: %.cpp 
+%.o: %.cpp constants.h 
 	g++ $(FLAGS) -c $<
 
 #	g++ ${FLAGS} -c init.cpp
@@ -22,7 +22,4 @@ md: $(OBJS)
 
 # Clean
 clean:
-	rm ./md
-
-realclean:
 	rm *.o ./md
