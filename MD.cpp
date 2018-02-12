@@ -11,7 +11,7 @@
 #include "output.h"
 
 int main() {
-	double R[N][3]={{0.0}}, P[N][3] = {{0.0}}, F[N][3] = {{0.0}};
+	double R[N][dim]={{0.0}}, P[N][dim] = {{0.0}}, F[N][dim] = {{0.0}};
 	int iter;
 	double dt = 1.0e-3, realt = 0.0;
 	int plotstride = 200;
@@ -20,8 +20,8 @@ int main() {
 	clock_t cpu_start, cpu_end;
 	double cpu_dt;
 
-	RPo = fopen("RandP_P0.xyz","w+");
-	Energyo = fopen("KE_PE_Etot_P0.dat","w+");
+	RPo = fopen("RandP.xyz","w+");
+	Energyo = fopen("KE_PE_Etot.dat","w+");
 	To_warmup = fopen("warmupT.dat","w+");
 	To_run = fopen("runT.dat","w+");
 

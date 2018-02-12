@@ -4,7 +4,7 @@
 #include "constants.h"
 #include "forcepotential.h"
 
-void output(double R[N][3],double P[N][3],double realt,FILE *frp,FILE *fenergy) {
+void output(double R[N][dim],double P[N][dim],double realt,FILE *frp,FILE *fenergy) {
 	double KE = 0.0,PE,kei;
 	int i,j;
 
@@ -12,11 +12,11 @@ void output(double R[N][3],double P[N][3],double realt,FILE *frp,FILE *fenergy) 
 	fprintf(frp,"%11.3f \n",realt);
 	for(i=0; i<N; i++){
 		fprintf(frp,"%7d \t",1);
-		for(j=0; j<3; j++){
+		for(j=0; j<dim; j++){
 			fprintf(frp,"%11.3f \t",R[i][j]);
 		}
 		kei = 0.0;
-		for(j=0; j<3; j++){
+		for(j=0; j<dim; j++){
 			KE += P[i][j]*P[i][j];
 			kei += P[i][j]*P[i][j];
 			fprintf(frp,"%11.5f \t",P[i][j]);

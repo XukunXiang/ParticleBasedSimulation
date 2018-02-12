@@ -9,20 +9,20 @@ double getrand() {
 	return (double)rand()/(double)RAND_MAX;
 }
 
-void Init_R(double R[N][3]){
+void Init_R(double R[N][dim]){
 	int numb, check, i, j;
-	double r0[3],rel,s,thr;
+	double r0[dim],rel,s,thr;
 	
 	thr = cutoff*cutoff;	
 	numb = 0;
 	while (numb < N){
-		for (j=0; j<3; j++)
+		for (j=0; j<dim; j++)
 			r0[j] = L*(2.0*getrand() - 1.0);		
 		check = 0;
 		//check for proximity
 		for (i=0; i<numb; i++){
 			s = 0.0;
-			for (j=0; j<3; j++) {
+			for (j=0; j<dim; j++) {
 				rel = R[i][j]-r0[j];
 				rel -= L*nearbyint(rel/L);
 				s += pow(rel,2.0);
@@ -33,7 +33,7 @@ void Init_R(double R[N][3]){
 			}
 		}
 		if (check == 0){
-			for (j=0; j<3; j++) {
+			for (j=0; j<dim; j++) {
 				R[numb][j] = r0[j];
 			}
 			numb += 1;
@@ -66,72 +66,72 @@ void Init_R_FCC(double R[N][3]){
 	}
 }
 
-void Init_P(double P[N][3]) {
+void Init_P(double P[N][dim]) {
 	int i,j;
 	double temp,lambda = sqrt(T_init);
-	double avgv[3]={0.0};
+	double avgv[dim]={0.0};
 
 	for (i = 0; i < N; i++) {
-		for (j = 0; j < 3; j++){
+		for (j = 0; j < dim; j++){
 			temp = sqrt(-2.0*log(getrand()))*cos(2.0*PI*getrand());
 			P[i][j] = temp;
 			avgv[j] += temp; 
 		}
 	}
-	for (j=0; j<3; j++){
+	for (j=0; j<dim; j++){
 		avgv[j] = avgv[j]/N;
 	}
 	for (i=0;i<N;i++){
-		for (j = 0; j < 3; j++){
+		for (j = 0; j < dim; j++){
 			P[i][j] = lambda*(P[i][j]-avgv[j]);
 		}
 	}
 }
 
-void Init_P_random(double P[N][3]) {
+void Init_P_random(double P[N][dim]) {
 	int i,j;
 	double temp;
-	double avgv[3]={0.0};
+	double avgv[dim]={0.0};
 
 	for (i = 0; i < N; i++) {
-		for (j = 0; j < 3; j++){
+		for (j = 0; j < dim; j++){
 			temp = getrand();
 			P[i][j] = temp;
 			avgv[j] += temp; 
 		}
 	}
-	for (j=0; j<3; j++){
+	for (j=0; j<dim; j++){
 		avgv[j] = avgv[j]/N;
 	}
 	for (i=0;i<N;i++){
-		for (j = 0; j < 3; j++){
+		for (j = 0; j < dim; j++){
 			P[i][j] = P[i][j]-avgv[j];
 		}
 	}
 }
 
-double rescale(double P[N][3]){
+double rescale(double P[N][dim]){
 	double T_current,s;
 	int i,j;
 	
 	T_current = getT(P);
-	s = sqrt(1+(T_init/T_current-1)/(double(Itime)/3.0));
+	s = sqrt(1+(T_init/T_current-1)/(double(Itime)/double(dim)));
 	for (i=0;i<N;i++) {
-		for (j=0;j<3;j++){
+		for (j=0;j<dim;j++){
 			P[i][j] = P[i][j]*s;
 		}
 	}
 	return T_current;
 }
 
-double rescale_single(double P[N][3]){
+double rescale_single(double P[N][dim]){
 	double T_current,lambda;
 	int i,j;
 	
 	T_current = getT(P);
 	lambda = sqrt(T_init/T_current);
 	for (i=0;i<N;i++) {
-		for (j=0;j<3;j++){
+		for (j=0;j<dim;j++){
 			P[i][j] = P[i][j]*lambda;
 		}
 	}
@@ -139,25 +139,25 @@ double rescale_single(double P[N][3]){
 }
 
 
-double getT(double P[N][3]){
-	double avgp[3]={0.0},p2=0.0,t_current;
+double getT(double P[N][dim]){
+	double avgp[dim]={0.0},p2=0.0,t_current;
 	int i,j;
 	//get <P>
 	for (i=0;i<N;i++) {
-		for (j=0;j<3;j++){
+		for (j=0;j<dim;j++){
 			avgp[j] += P[i][j];
 		}
 	}
-	for (j=0;j<3;j++){
+	for (j=0;j<dim;j++){
 		avgp[j] = avgp[j]/N;
 	}
 	//substract <P> from every Pi
 	for (i=0;i<N;i++) {
-		for (j=0;j<3;j++){
+		for (j=0;j<dim;j++){
 			P[i][j] -= avgp[j];
 			p2 += pow(P[i][j],2.0);
 		}
 	}
-	t_current = sqrt(m*p2/(3.0*(N-1)));
+	t_current = sqrt(m*p2/(double(dim)*(N-1)));
 	return t_current;
 }

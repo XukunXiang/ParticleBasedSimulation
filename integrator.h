@@ -1,6 +1,7 @@
 #ifndef __INTEGRATOR_H_INCLUDED__
 #define	__INTEGRATOR_H_INCLUDED__
+#include "constants.h"
 
-void VelocityVerlet(double R[][3],double P[][3],double F[][3],double dt);
+void VelocityVerlet(double R[][dim],double P[][dim],double F[][dim],double dt);
 
 #endif
