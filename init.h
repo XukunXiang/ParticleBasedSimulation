@@ -6,6 +6,7 @@ double getrand();
 
 void Init_R(double R[][dim]);
 void Init_R_FCC(double R[][3]);
+void Init_R_2D_3box(double R[][dim]);
 
 void Init_P(double P[][dim]);
 void Init_P_random(double P[][dim]);

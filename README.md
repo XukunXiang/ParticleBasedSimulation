@@ -7,10 +7,10 @@ Done:
 - Poor Man's neighbor list
 
 Working on: MPI
-- [ ] psudo code ready for 2D MPI implementation
-	- [ ] particle decomposition
-	- [ ] spatial decomposition
-- [ ] get familiar with MPI and Isend and Irecv
+- [x] psudo code ready for 2D MPI implementation
+	- [x] particle decomposition
+	- [x] spatial decomposition
+- [x] get familiar with MPI and Isend and Irecv
 - [ ] 2D MPI implementation
 
 Next:

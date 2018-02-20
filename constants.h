@@ -3,16 +3,16 @@
 
 const double PI=3.14159265359;
 
-const int dim = 3; 
+const int dim = 2; 
 
 const double m=1.0;
 
-const int Ntime=1000;
-const int Itime=1000;
+const int Ntime=10;
+const int Itime=1;
 
 const int nc = 5;
-const int N = 500;
-const double L = 7.935;
+const int N = 100;
+const double L = 15.0;
 const double rho = 1.0;
 const double a0 = 1.587; 
 

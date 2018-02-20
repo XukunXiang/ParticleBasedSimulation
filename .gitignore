@@ -14,7 +14,7 @@ cutoff/
 LinkedCellList/
 timing/
 HW*/
-MPI/
+exampleMPI/
 
 # other files
 *.f90

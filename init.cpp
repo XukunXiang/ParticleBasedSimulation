@@ -41,6 +41,38 @@ void Init_R(double R[N][dim]){
 	}
 }
 
+void Init_R_2D_3box(double R[N][dim]){
+	int numb, check, i, j;
+	double r0[dim],rel,s,thr;
+	
+	thr = cutoff*cutoff;	
+	numb = 0;
+	while (numb < N){
+			r0[0] = 3.0*L*getrand();		
+			r0[1] = L*getrand();		
+		check = 0;
+		//check for proximity
+		for (i=0; i<numb; i++){
+			s = 0.0;
+			for (j=0; j<dim; j++) {
+				rel = R[i][j]-r0[j];
+				rel -= L*nearbyint(rel/L);
+				s += pow(rel,2.0);
+			}
+			if (s < thr){
+				check = 1;
+				break;
+			}
+		}
+		if (check == 0){
+			for (j=0; j<dim; j++) {
+				R[numb][j] = r0[j];
+			}
+			numb += 1;
+		}
+	}
+}
+
 void Init_R_FCC(double R[N][3]){
 	int numb,i,j,k;
 	
