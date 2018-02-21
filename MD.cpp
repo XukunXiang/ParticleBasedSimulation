@@ -28,21 +28,24 @@ int main(int argc,char *argv[]) {
 	
 	//=======MPI Initialization=======
 	int 	rank,size,provided,i;
-	MPI_Init_thread(&argc,&argv,MPI_THREAD_SINGLE,&provided);
+	MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 	//=======Initialization=======
+	int ni[4] = {0}; // number of particles for each box, ni[0] for master
+	double **ri = new double*[3];//outgoing particle R
 	if (rank == 0){
 		Init_R_2D_3box(R);
 		Init_P_random(P);
-		int ni[3] = {0},bid;
 		// counting number of particles in each cell and check
+		int bid,boxid[N];
 		for (i=0;i<N;i++){
-			bid = int(floor(R[i][0]/L));
+			bid = (int)floor(R[i][0]/L)+1;
+			boxid[i] = bid-1;
 			ni[bid] += 1;
 		}
-		for (i=0;i<3;i++){
+		for (i=1;i<4;i++){
 			if (ni[i] ==0){
 				printf("no particle in box #%d \n",i);
 				return 0;
@@ -50,10 +53,47 @@ int main(int argc,char *argv[]) {
 				printf("%d particles in box #%d \n",ni[i],i);
 			}
 		}
+		//packing outgoing particles
+		for (i=0;i<3;i++)	ri[i] = new double[ni[i+1]*2];
+		int bidx[3]={0},idx;
+		for (i=0;i<N;i++){
+			bid = boxid[i];
+			idx = 2*bidx[bid];
+			ri[bid][idx] = R[i][0];
+			ri[bid][idx+1] = R[i][1];
+			bidx[bid] += 1;
+		}
+		//check
+		for (i=0;i<3;i++){
+			for (int j=0;j<3;j++){
+				printf("%11.3f \t %11.3f\t",ri[i][2*j],ri[i][2*j+1]);
+			}
+			printf("\n");
+		}
 	}
+
 	// send out particles
+	int numlocal; //paticle number in local box
 	// send out number of particles first
+	MPI_Scatter(&ni[0],1,MPI_INT,&numlocal,1,MPI_INT,0,MPI_COMM_WORLD);
+	
 	// then send out the R and P
+	double *R_local = new double[numlocal*2];
+//	double *P_local = new double[numlocal*2];
+	if (rank !=0){
+		printf("This is box#%d, my numlocal is %d \n",rank,numlocal);
+		// create array for R and P of local particles
+		MPI_Recv(&R_local[0],2*numlocal,MPI_DOUBLE,0,rank,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+		//recv check
+		for (int j=0;j<3;j++){
+			printf("#%d in %d: %11.3f \t %11.3f\n",j,rank,R_local[2*j],R_local[2*j+1]);
+		}
+	}else{ //rank == 0
+		for (i=1;i<4;i++){
+			MPI_Send(&ri[i-1][0],2*ni[i],MPI_DOUBLE,i,i,MPI_COMM_WORLD);
+		}
+	}
+
 
 	//=======Warmup Run=======
 /*
