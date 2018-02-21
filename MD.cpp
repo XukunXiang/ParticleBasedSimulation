@@ -35,6 +35,7 @@ int main(int argc,char *argv[]) {
 	//=======Initialization=======
 	int ni[4] = {0}; // number of particles for each box, ni[0] for master
 	double **ri = new double*[3];//outgoing particle R
+	double **pi = new double*[3];//outgoing particle P
 	if (rank == 0){
 		Init_R_2D_3box(R);
 		Init_P_random(P);
@@ -55,20 +56,22 @@ int main(int argc,char *argv[]) {
 		}
 		//packing outgoing particles
 		for (i=0;i<3;i++)	ri[i] = new double[ni[i+1]*2];
+		for (i=0;i<3;i++)	pi[i] = new double[ni[i+1]*2];
 		int bidx[3]={0},idx;
 		for (i=0;i<N;i++){
 			bid = boxid[i];
 			idx = 2*bidx[bid];
 			ri[bid][idx] = R[i][0];
 			ri[bid][idx+1] = R[i][1];
+			pi[bid][idx] = P[i][0];
+			pi[bid][idx+1] = P[i][1];
 			bidx[bid] += 1;
 		}
 		//check
 		for (i=0;i<3;i++){
 			for (int j=0;j<3;j++){
-				printf("%11.3f \t %11.3f\t",ri[i][2*j],ri[i][2*j+1]);
+				printf("%11.3f \t %11.3f\t %11.3f \t %11.3f\n",ri[i][2*j],ri[i][2*j+1],pi[i][2*j],pi[i][2*j+1]);
 			}
-			printf("\n");
 		}
 	}
 
@@ -79,18 +82,20 @@ int main(int argc,char *argv[]) {
 	
 	// then send out the R and P
 	double *R_local = new double[numlocal*2];
-//	double *P_local = new double[numlocal*2];
+	double *P_local = new double[numlocal*2];
 	if (rank !=0){
 		printf("This is box#%d, my numlocal is %d \n",rank,numlocal);
 		// create array for R and P of local particles
 		MPI_Recv(&R_local[0],2*numlocal,MPI_DOUBLE,0,rank,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+		MPI_Recv(&P_local[0],2*numlocal,MPI_DOUBLE,0,rank,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 		//recv check
 		for (int j=0;j<3;j++){
-			printf("#%d in %d: %11.3f \t %11.3f\n",j,rank,R_local[2*j],R_local[2*j+1]);
+			printf("#%d in %d: %11.3f \t %11.3f\t %11.3f\t %11.3f\n",j,rank,R_local[2*j],R_local[2*j+1],P_local[2*j],P_local[2*j+1]);
 		}
 	}else{ //rank == 0
 		for (i=1;i<4;i++){
 			MPI_Send(&ri[i-1][0],2*ni[i],MPI_DOUBLE,i,i,MPI_COMM_WORLD);
+			MPI_Send(&pi[i-1][0],2*ni[i],MPI_DOUBLE,i,i,MPI_COMM_WORLD);
 		}
 	}
 
