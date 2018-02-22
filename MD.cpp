@@ -15,7 +15,7 @@ int main(int argc,char *argv[]) {
 	double R[N][dim]={{0.0}}, P[N][dim] = {{0.0}}, F[N][dim] = {{0.0}};
 	int iter;
 	double dt = 1.0e-3, realt = 0.0;
-	int plotstride = 200;
+	//int plotstride = 2;
 	FILE *RPo,*Energyo,*To_warmup,*To_run;
 
 	RPo = fopen("RandP.xyz","w+");
@@ -67,16 +67,10 @@ int main(int argc,char *argv[]) {
 			pi[bid][idx+1] = P[i][1];
 			bidx[bid] += 1;
 		}
-		//check
-		for (i=0;i<3;i++){
-			for (int j=0;j<3;j++){
-				printf("%11.3f \t %11.3f\t %11.3f \t %11.3f\n",ri[i][2*j],ri[i][2*j+1],pi[i][2*j],pi[i][2*j+1]);
-			}
-		}
 	}
 
 	// send out particles
-	int numlocal; //paticle number in local box
+	int numlocal=0; //paticle number in local box
 	// send out number of particles first
 	MPI_Scatter(&ni[0],1,MPI_INT,&numlocal,1,MPI_INT,0,MPI_COMM_WORLD);
 	
@@ -88,38 +82,62 @@ int main(int argc,char *argv[]) {
 		// create array for R and P of local particles
 		MPI_Recv(&R_local[0],2*numlocal,MPI_DOUBLE,0,rank,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 		MPI_Recv(&P_local[0],2*numlocal,MPI_DOUBLE,0,rank,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-		//recv check
-		for (int j=0;j<3;j++){
-			printf("#%d in %d: %11.3f \t %11.3f\t %11.3f\t %11.3f\n",j,rank,R_local[2*j],R_local[2*j+1],P_local[2*j],P_local[2*j+1]);
-		}
 	}else{ //rank == 0
 		for (i=1;i<4;i++){
 			MPI_Send(&ri[i-1][0],2*ni[i],MPI_DOUBLE,i,i,MPI_COMM_WORLD);
 			MPI_Send(&pi[i-1][0],2*ni[i],MPI_DOUBLE,i,i,MPI_COMM_WORLD);
 		}
 	}
-
-
-	//=======Warmup Run=======
-/*
-	for (iter = 1; iter<=(Itime+1); iter++) {
-		double t_temp;
-		VelocityVerlet(R,P,F,dt);
-		t_temp = getT(P);
-		//rescale(P);
-		if (iter % 50 == 0){rescale_single(P);}
-		fprintf(To_warmup,"%11.5f \n",t_temp);
+	// clean up
+	if (rank ==0){
+		for (i=0;i<3;i++){
+			delete [] ri[i];
+			delete [] pi[i];
+		}
 	}
-*/
-	
+	delete[] ri;
+	delete[] pi;
+
 	//=======Simulation=======
+	double *F_local = new double[numlocal*2];
+	MPI_Datatype stype;
 	ForceCalculation(R,F);
+	//ForceCalculation_MPI_3box(R_local,F_local,numlocal);
 	for (iter = 1; iter<=(Ntime+1); iter++) {
 		realt += dt;
 		VelocityVerlet(R,P,F,dt);
-		fprintf(To_run,"%11.5f \t %11.5f \n",realt,getT(P));	
+		//VelocityVerlet_MPI_3box(R_local,P_local,F_local,dt);
+//		fprintf(To_run,"%11.5f \t %11.5f \n",realt,getT(P));	
 		if ((iter % plotstride) == 0){
-			output(R,P,realt,RPo,Energyo);
+			//***gather data back to master
+			double *Rarray = new double[N*2];
+			int *NumInBox,*displs,*rcounts;
+			//******gather numlocal first
+			if (rank==0) {
+				NumInBox = new int[4];
+				displs = new int[4];
+				rcounts = new int[4];
+			}
+			MPI_Gather(&numlocal,1,MPI_INT,&NumInBox[0],1,MPI_INT,0,MPI_COMM_WORLD);
+			if (rank==0) {
+				int offset = 0;
+				for (i=0;i<4;i++){
+					displs[i] = offset;
+					offset += 2*NumInBox[i];
+					rcounts[i] = 2*NumInBox[i];
+				}
+			}
+			//******then gather data with shift
+			MPI_Type_vector(numlocal,2,2,MPI_DOUBLE,&stype);
+			MPI_Type_commit(&stype);
+			MPI_Gatherv(R_local,1,stype,Rarray,rcounts,displs,MPI_DOUBLE,0,MPI_COMM_WORLD);
+			
+			if (rank==0) {
+				delete [] NumInBox;
+				delete [] displs;
+				delete [] rcounts;
+			}
+//			output(R,P,realt,RPo,Energyo);
 		//	printf("%11.5f \n",getT(P));	
 		}
 	}

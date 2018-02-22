@@ -1,6 +1,6 @@
 # Commet lines
 # Here we define compiler option, libraries and the target
-FLAGS = -O2 -Wall
+FLAGS = -O0 -Wall
 
 # Here we make the executable file
 SRCS = MD.cpp init.cpp integrator.cpp output.cpp forcepotential.cpp
