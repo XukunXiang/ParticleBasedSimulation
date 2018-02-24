@@ -7,7 +7,7 @@ const int dim = 2;
 
 const double m=1.0;
 
-const int Ntime=2;
+const int Ntime=1;
 const int Itime=1;
 const int plotstride = 2;
 

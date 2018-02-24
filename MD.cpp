@@ -133,6 +133,7 @@ int main(int argc,char *argv[]) {
 			MPI_Type_commit(&stype);
 			MPI_Gatherv(R_local,1,stype,Rarray,rcounts,displs,MPI_DOUBLE,0,MPI_COMM_WORLD);
 			MPI_Gatherv(P_local,1,stype,Parray,rcounts,displs,MPI_DOUBLE,0,MPI_COMM_WORLD);
+			//clean up
 			if (rank==0) {
 				delete [] NumInBox;
 				delete [] displs;

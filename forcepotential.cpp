@@ -69,7 +69,6 @@ void ForceCalculation_MPI_3box(double r_d[],double f_d[],int numlocal){
 			ngtl += 1;
 		}
 	}
-	printf("@%d:%d to left, %d to right; number check %d\n",rank,ngtl,ngtr,ngtl+dummy+ngtr);
 	//packing outgoing ghost particles' position
 	double *GhostToL = new double[ngtl*2];
 	double *GhostToR = new double[ngtr*2];
@@ -85,9 +84,40 @@ void ForceCalculation_MPI_3box(double r_d[],double f_d[],int numlocal){
 			idxL += 1;
 		}
 	}
+	
+	MPI_Status sta[4];
+	MPI_Request rq[4];
 	//send/recv number first
+	//**since we are on rank=1,2,3 and size=4
+	//left neighbor(with periodic BC) for [0,1,2] in size=3 should be (rank-1+size)%size
+	//so in our case, ((rank-1)-1+(size-1))%(size-1)+1
+	int ln,rn;
+	ln = (rank+size-3)%(size-1)+1;
+	//(rank-1+1+size-1)%(size-1)+1
+	rn = (rank+size-1)%(size-1)+1;
+	//send/recv ghost particle number first, tag is 10*source+dest
+	MPI_Irecv(&ngfl,1,MPI_INT,ln,10*ln+rank,MPI_COMM_WORLD,&rq[0]);
+	MPI_Irecv(&ngfr,1,MPI_INT,rn,10*rn+rank,MPI_COMM_WORLD,&rq[1]);
+	MPI_Isend(&ngtl,1,MPI_INT,ln,10*rank+ln,MPI_COMM_WORLD,&rq[2]);
+	MPI_Isend(&ngtr,1,MPI_INT,rn,10*rank+rn,MPI_COMM_WORLD,&rq[3]);
+	MPI_Waitall(4,rq,sta);
 	//send/recv ghost particle positions
+	double *GhostFromL = new double[ngfl*2];
+	double *GhostFromR = new double[ngfr*2];
+	MPI_Irecv(GhostFromL,2*ngfl,MPI_DOUBLE,ln,10*ln+rank,MPI_COMM_WORLD,&rq[0]);
+	MPI_Irecv(GhostFromR,2*ngfr,MPI_DOUBLE,rn,10*rn+rank,MPI_COMM_WORLD,&rq[1]);
+	MPI_Isend(GhostToL,2*ngtl,MPI_DOUBLE,ln,10*rank+ln,MPI_COMM_WORLD,&rq[2]);
+	MPI_Isend(GhostToR,2*ngtr,MPI_DOUBLE,rn,10*rank+rn,MPI_COMM_WORLD,&rq[3]);
+	MPI_Waitall(4,rq,sta);
+
 	//check
+/*	printf("rank%d: %d from ln%d, %d from rn%d\n",rank,ngfl,ln,ngfr,rn);
+	for (i=0;i<3;i++){
+		printf("#%d from %d to %d: %11.3f\t %11.3f \n",i,rank,ln,GhostToL[2*i],GhostToL[2*i+1]);
+		printf("#%d from %d to %d: %11.3f\t %11.3f \n",i,rank,rn,GhostToR[2*i],GhostToR[2*i+1]);
+		printf("#%d from %d to %d: %11.3f\t %11.3f \n",i,ln,rank,GhostFromL[2*i],GhostFromL[2*i+1]);
+		printf("#%d from %d to %d: %11.3f\t %11.3f \n",i,rn,rank,GhostFromR[2*i],GhostFromR[2*i+1]);
+	} */
 
 	for (j = 0; j < (numlocal-1); j++) {
 		for (k=0; k<dim; k++){
