@@ -101,16 +101,17 @@ int main(int argc,char *argv[]) {
 	//=======Simulation=======
 	double *F_local = new double[numlocal*2];
 	MPI_Datatype stype;
-	ForceCalculation(R,F);
-	//ForceCalculation_MPI_3box(R_local,F_local,numlocal);
+	//ForceCalculation(R,F);
+	if (rank != 0)	ForceCalculation_MPI_3box(R_local,F_local,numlocal);
 	for (iter = 1; iter<=(Ntime+1); iter++) {
 		realt += dt;
-		VelocityVerlet(R,P,F,dt);
-		//VelocityVerlet_MPI_3box(R_local,P_local,F_local,dt);
+		if (rank !=0) VelocityVerlet_MPI_3box(R_local,P_local,F_local,dt,numlocal);
+			//VelocityVerlet(R,P,F,dt);
 //		fprintf(To_run,"%11.5f \t %11.5f \n",realt,getT(P));	
 		if ((iter % plotstride) == 0){
 			//***gather data back to master
 			double *Rarray = new double[N*2];
+			double *Parray = new double[N*2];
 			int *NumInBox,*displs,*rcounts;
 			//******gather numlocal first
 			if (rank==0) {
@@ -131,11 +132,13 @@ int main(int argc,char *argv[]) {
 			MPI_Type_vector(numlocal,2,2,MPI_DOUBLE,&stype);
 			MPI_Type_commit(&stype);
 			MPI_Gatherv(R_local,1,stype,Rarray,rcounts,displs,MPI_DOUBLE,0,MPI_COMM_WORLD);
-			
+			MPI_Gatherv(P_local,1,stype,Parray,rcounts,displs,MPI_DOUBLE,0,MPI_COMM_WORLD);
 			if (rank==0) {
 				delete [] NumInBox;
 				delete [] displs;
 				delete [] rcounts;
+				delete [] Rarray;
+				delete [] Parray;
 			}
 //			output(R,P,realt,RPo,Energyo);
 		//	printf("%11.5f \n",getT(P));	

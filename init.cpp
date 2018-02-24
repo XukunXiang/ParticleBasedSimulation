@@ -48,8 +48,8 @@ void Init_R_2D_3box(double R[N][dim]){
 	thr = cutoff*cutoff;	
 	numb = 0;
 	while (numb < N){
-			r0[0] = 3.0*L*getrand();		
-			r0[1] = L*getrand();		
+		r0[0] = 3.0*L*getrand();		
+		r0[1] = L*getrand();		
 		check = 0;
 		//check for proximity
 		for (i=0; i<numb; i++){
