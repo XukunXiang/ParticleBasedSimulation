@@ -39,7 +39,7 @@ void ForceCalculation(double R[N][dim],double F[N][dim]){
 	}
 }
 
-void ForceCalculation_MPI_3box(double r_d[],double f_d[],int numlocal){
+void ForceCalculation_MPI_3box(double *r_d,double *f_d,int numlocal){
 	int i,j,k;
 	double rj[dim],rel[dim],rel_len2,fij,fijk;	 
 	
@@ -72,15 +72,19 @@ void ForceCalculation_MPI_3box(double r_d[],double f_d[],int numlocal){
 	//packing outgoing ghost particles' position
 	double *GhostToL = new double[ngtl*2];
 	double *GhostToR = new double[ngtr*2];
+	int *idGTL = new int[ngtl];
+	int *idGTR = new int[ngtr];
 	int idxL=0,idxR=0;
 	for (i=0; i<numlocal; i++){
 		if (gtlist[i] == 1){
 			GhostToR[idxR*2] = r_d[i*2];
 			GhostToR[idxR*2+1] = r_d[i*2+1];
+			idGTR[idxR] = i;
 			idxR += 1;
 		} else if (gtlist[i] == -1){
 			GhostToL[idxL*2] = r_d[i*2];
 			GhostToL[idxL*2+1] = r_d[i*2+1];
+			idGTL[idxL] = i;
 			idxL += 1;
 		}
 	}
@@ -111,14 +115,17 @@ void ForceCalculation_MPI_3box(double r_d[],double f_d[],int numlocal){
 	MPI_Waitall(4,rq,sta);
 
 	//check
-/*	printf("rank%d: %d from ln%d, %d from rn%d\n",rank,ngfl,ln,ngfr,rn);
+	/*
+	printf("rank%d: %d from ln%d, %d from rn%d\n",rank,ngfl,ln,ngfr,rn);
 	for (i=0;i<3;i++){
 		printf("#%d from %d to %d: %11.3f\t %11.3f \n",i,rank,ln,GhostToL[2*i],GhostToL[2*i+1]);
 		printf("#%d from %d to %d: %11.3f\t %11.3f \n",i,rank,rn,GhostToR[2*i],GhostToR[2*i+1]);
 		printf("#%d from %d to %d: %11.3f\t %11.3f \n",i,ln,rank,GhostFromL[2*i],GhostFromL[2*i+1]);
 		printf("#%d from %d to %d: %11.3f\t %11.3f \n",i,rn,rank,GhostFromR[2*i],GhostFromR[2*i+1]);
-	} */
+	} 
+	*/
 
+	// force from local particles
 	for (j = 0; j < (numlocal-1); j++) {
 		for (k=0; k<dim; k++){
 			rj[k] = r_d[j*dim+k];
@@ -140,6 +147,53 @@ void ForceCalculation_MPI_3box(double r_d[],double f_d[],int numlocal){
 			}
 		}
 	}
+
+	//froce from ghost particles, only need to look at ourgoing particles
+	//[later] make a function call on ghost contribution
+	for (j = 0; j < ngtl; j++) {
+		int jidx = idGTL[j];
+		for (k=0; k<dim; k++){
+			rj[k] = GhostToL[j*dim+k]; //rj[k] = r_d[jidx*dim+k];
+		}
+		for (i = 0; i <ngfl ; i++){
+			rel_len2 = 0.0;
+			for (k = 0; k<dim; k++) {
+				rel[k] = GhostFromL[i*dim+k]-rj[k];
+				rel[k] -=  lxly[k]*nearbyint(rel[k]/lxly[k]);
+				rel_len2 += pow(rel[k],2.0);
+			}
+			//Poor man's neighbor list
+			if (rel_len2>Fcutoff2) continue;
+			fij = 4.0*(6.0*pow(rel_len2,-4.0)-12.0*pow(rel_len2,-7.0));
+			for (k = 0; k<dim; k++) {
+				fijk = fij*rel[k];
+				f_d[jidx*dim+k] += fijk;
+			}
+		}
+	}
+	for (j = 0; j < ngtr; j++) {
+		int jidx = idGTR[j];
+		for (k=0; k<dim; k++){
+			rj[k] = GhostToR[j*dim+k]; //rj[k] = r_d[jidx*dim+k];
+		}
+		for (i = 0; i <ngfr; i++){
+			rel_len2 = 0.0;
+			for (k = 0; k<dim; k++) {
+				rel[k] = GhostFromR[i*dim+k]-rj[k];
+				rel[k] -=  lxly[k]*nearbyint(rel[k]/lxly[k]);
+				rel_len2 += pow(rel[k],2.0);
+			}
+			//Poor man's neighbor list
+			if (rel_len2>Fcutoff2) continue;
+			fij = 4.0*(6.0*pow(rel_len2,-4.0)-12.0*pow(rel_len2,-7.0));
+			for (k = 0; k<dim; k++) {
+				fijk = fij*rel[k];
+				f_d[jidx*dim+k] += fijk;
+			}
+		}
+	}
+
+
 }
 
 double getPE(double R[N][dim]) {

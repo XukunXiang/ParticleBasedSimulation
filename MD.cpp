@@ -75,13 +75,14 @@ int main(int argc,char *argv[]) {
 	MPI_Scatter(&ni[0],1,MPI_INT,&numlocal,1,MPI_INT,0,MPI_COMM_WORLD);
 	
 	// then send out the R and P
-	double *R_local = new double[numlocal*2];
-	double *P_local = new double[numlocal*2];
+	double *R_local, *P_local;
 	if (rank !=0){
+		R_local = new double[numlocal*2];
+		P_local = new double[numlocal*2];
 		printf("This is box#%d, my numlocal is %d \n",rank,numlocal);
 		// create array for R and P of local particles
-		MPI_Recv(&R_local[0],2*numlocal,MPI_DOUBLE,0,rank,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-		MPI_Recv(&P_local[0],2*numlocal,MPI_DOUBLE,0,rank,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+		MPI_Recv(R_local,2*numlocal,MPI_DOUBLE,0,rank,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+		MPI_Recv(P_local,2*numlocal,MPI_DOUBLE,0,rank,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 	}else{ //rank == 0
 		for (i=1;i<4;i++){
 			MPI_Send(&ri[i-1][0],2*ni[i],MPI_DOUBLE,i,i,MPI_COMM_WORLD);
@@ -99,16 +100,20 @@ int main(int argc,char *argv[]) {
 	delete[] pi;
 
 	//=======Simulation=======
-	double *F_local = new double[numlocal*2];
+	double *F_local = new double[2*numlocal];
 	MPI_Datatype stype;
-	//ForceCalculation(R,F);
 	if (rank != 0)	ForceCalculation_MPI_3box(R_local,F_local,numlocal);
 	for (iter = 1; iter<=(Ntime+1); iter++) {
 		realt += dt;
-		if (rank !=0) VelocityVerlet_MPI_3box(R_local,P_local,F_local,dt,numlocal);
-			//VelocityVerlet(R,P,F,dt);
+		if (rank !=0) {
+			printf("***before VV*****rank#%d: %7.3f  %d\n",rank,R_local[0],numlocal);
+			VelocityVerlet_MPI_3box(R_local,P_local,F_local,dt,numlocal);
+			printf("***after VV*****rank#%d: %7.3f  %d\n",rank,R_local[0],numlocal);
+		}
+
 //		fprintf(To_run,"%11.5f \t %11.5f \n",realt,getT(P));	
 		if ((iter % plotstride) == 0){
+			printf("iter:%d, numlocal = %d \n",iter,numlocal);
 			//***gather data back to master
 			double *Rarray = new double[N*2];
 			double *Parray = new double[N*2];
@@ -126,7 +131,9 @@ int main(int argc,char *argv[]) {
 					displs[i] = offset;
 					offset += 2*NumInBox[i];
 					rcounts[i] = 2*NumInBox[i];
+					printf("%d \t",NumInBox[i]);
 				}
+				printf("\n");
 			}
 			//******then gather data with shift
 			MPI_Type_vector(numlocal,2,2,MPI_DOUBLE,&stype);
@@ -140,8 +147,8 @@ int main(int argc,char *argv[]) {
 				delete [] rcounts;
 				delete [] Rarray;
 				delete [] Parray;
+//				output(Rarray,Parray,realt,RPo,Energyo);
 			}
-//			output(R,P,realt,RPo,Energyo);
 		//	printf("%11.5f \n",getT(P));	
 		}
 	}

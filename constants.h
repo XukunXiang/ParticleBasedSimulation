@@ -11,9 +11,10 @@ const int Ntime=1;
 const int Itime=1;
 const int plotstride = 2;
 
-const int nc = 5;
-const int N = 100;
 const double L = 15.0;
+const double lxly[2] = {3.0*L,L};
+const int nc = 5;
+const int N = 10;
 const double rho = 1.0;
 const double a0 = 1.587; 
 
